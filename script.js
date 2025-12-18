@@ -19,6 +19,63 @@ const textInput = document.getElementById('textInput'); // New
 const startButton = document.getElementById('startButton');
 const shareButton = document.getElementById('shareButton'); // New
 const errorMsg = document.getElementById('errorMsg');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const iconMaximize = document.getElementById('icon-maximize');
+const iconMinimize = document.getElementById('icon-minimize');
+
+// --- FULLSCREEN TOGGLE ---
+fullscreenBtn.addEventListener('click', toggleFullScreen);
+
+let hideTimeout;
+
+function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.log(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
+
+function updateFullscreenButton() {
+    if (document.fullscreenElement) {
+        iconMaximize.style.display = 'none';
+        iconMinimize.style.display = 'block';
+        fullscreenBtn.setAttribute('title', 'Thoát toàn màn hình');
+        
+        // Start auto-hide logic
+        resetHideTimer();
+        document.addEventListener('mousemove', resetHideTimer);
+        document.addEventListener('mousedown', resetHideTimer);
+        document.addEventListener('touchstart', resetHideTimer);
+    } else {
+        iconMaximize.style.display = 'block';
+        iconMinimize.style.display = 'none';
+        fullscreenBtn.setAttribute('title', 'Toàn màn hình');
+        
+        // Stop auto-hide logic
+        clearTimeout(hideTimeout);
+        fullscreenBtn.classList.remove('hidden');
+        document.removeEventListener('mousemove', resetHideTimer);
+        document.removeEventListener('mousedown', resetHideTimer);
+        document.removeEventListener('touchstart', resetHideTimer);
+    }
+}
+
+function resetHideTimer() {
+    fullscreenBtn.classList.remove('hidden');
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+        if (document.fullscreenElement) {
+            fullscreenBtn.classList.add('hidden');
+        }
+    }, 3000);
+}
+
+document.addEventListener('fullscreenchange', updateFullscreenButton);
 
 let width, height;
 let textPoints = []; 

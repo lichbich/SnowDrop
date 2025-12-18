@@ -163,3 +163,84 @@ canvas {
 .shake {
   animation: shake 0.4s ease-in-out;
 }
+
+/* Fullscreen Button Styles */
+#fullscreenBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 44px; /* Slightly larger for easier tap */
+    height: 44px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 2000;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#fullscreenBtn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    color: #fff;
+}
+
+#fullscreenBtn:active {
+    transform: scale(0.95);
+}
+
+#fullscreenBtn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Fullscreen Button Styles */
+#fullscreenBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 44px; /* Slightly larger for easier tap */
+    height: 44px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 2000;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#fullscreenBtn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    color: #fff;
+}
+
+#fullscreenBtn:active {
+    transform: scale(0.95);
+}
+
+#fullscreenBtn svg {
+    width: 20px;
+    height: 20px;
+}
+
+#fullscreenBtn.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
