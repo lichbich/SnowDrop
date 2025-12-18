@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuyết Rơi Phủ Chữ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <canvas id="snowCanvas"></canvas>
+    <div id="instruction">Natural Snow Accumulation</div>
+
+    <!-- Configuration Popup -->
+    <div id="configOverlay">
+        <div id="configBox">
+            <h2>Thời gian đong đầy</h2>
+            
+            <p style="margin-bottom: 5px;">Nội dung chữ:</p>
+            <textarea id="textInput" rows="3" placeholder="Nhập nội dung..."></textarea>
+
+            <p style="margin-bottom: 5px; margin-top: 15px;">Thời gian tuyết rơi (phút):</p>
+            <input type="number" id="timeInput" placeholder="Ví dụ: 15" min="5">
+            
+            <div id="errorMsg" class="error-message">Thời gian từ 5 phút trở lên!</div>
+            
+            <div class="button-group">
+                <button id="startButton">Bắt đầu</button>
+                <button id="shareButton">Chia sẻ</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
