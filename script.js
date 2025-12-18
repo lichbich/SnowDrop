@@ -282,6 +282,11 @@ class StickySnowflake extends BaseSnowflake {
     this.targetX = targetX;
     this.targetY = targetY;
 
+    // Chỉnh radius theo font size để chữ nhỏ thì tuyết nhỏ, nhìn rõ nét hơn
+    const baseRadius = CONFIG.usedFontSize ? CONFIG.usedFontSize / 40 : 2; 
+    // Ví dụ: Font 120 -> radius ~3. Font 40 -> radius ~1. 
+    this.radius = Math.random() * baseRadius + (baseRadius * 0.5);
+
     const startNoise = (Math.random() - 0.5) * 50;
     this.x = targetX + startNoise;
     this.y = -Math.random() * 20;
@@ -345,21 +350,106 @@ function initTextMap() {
   offCanvas.height = height;
   const offCtx = offCanvas.getContext("2d");
 
-  offCtx.fillStyle = "#FFFFFF";
-  offCtx.font = `bold ${CONFIG.fontSize}px ${CONFIG.fontFamily}`;
-  offCtx.textAlign = "center";
-  offCtx.textBaseline = "middle";
+  // --- Responsive Text Logic ---
+  let fontSize = CONFIG.fontSize;
+  let lines = [];
+  const maxWidth = width * 0.9;
+  
+  function getLines(ctx, text, maxWidth) {
+      const words = text.split(" ");
+      const lines = [];
+      let currentLine = words[0];
+      for (let i = 1; i < words.length; i++) {
+          const word = words[i];
+          const measure = ctx.measureText(currentLine + " " + word);
+          if (measure.width < maxWidth) {
+              currentLine += " " + word;
+          } else {
+              lines.push(currentLine);
+              currentLine = word;
+          }
+      }
+      lines.push(currentLine);
+      return lines; 
+  }
 
-  const lines = CONFIG.text.split("\n");
-  const lineHeight = CONFIG.fontSize * 1.2;
+  function calculateLayout(currentFontSize) {
+      offCtx.font = `bold ${currentFontSize}px ${CONFIG.fontFamily}`;
+      const userLines = CONFIG.text.split("\n");
+      let finalLines = [];
+      
+      for (let line of userLines) {
+          const words = line.split(" ");
+          let currentLine = words[0];
+          
+          for (let i = 1; i < words.length; i++) {
+              const word = words[i];
+              if (offCtx.measureText(currentLine + " " + word).width < maxWidth) {
+                  currentLine += " " + word;
+              } else {
+                  finalLines.push(currentLine);
+                  currentLine = word;
+              }
+          }
+          finalLines.push(currentLine);
+      }
+      return finalLines;
+  }
+
+  let minFontSize = 30; // Tăng minFontSize lên để dễ đọc hơn
+  
+  while (fontSize > minFontSize) {
+      offCtx.font = `bold ${fontSize}px ${CONFIG.fontFamily}`;
+      const calculatedLines = calculateLayout(fontSize);
+      
+      // Vẫn kiểm tra chiều ngang của từng từ (phòng trường hợp 1 từ siêu dài)
+      let wordTooLong = false;
+      const allWords = CONFIG.text.split(/\s+/);
+      for (let w of allWords) {
+             if (offCtx.measureText(w).width > maxWidth) {
+                 wordTooLong = true;
+                 break;
+             }
+      }
+      if (wordTooLong) {
+          fontSize -= 5;
+          continue;
+      }
+
+      // Check height: Nếu cao quá 80% màn thì giảm font
+      const totalHeight = calculatedLines.length * (fontSize * 1.2);
+      if (totalHeight > height * 0.8) {
+          fontSize -= 5;
+          continue;
+      }
+      
+      lines = calculatedLines;
+      break;
+  }
+  
+  if (lines.length === 0) lines = calculateLayout(fontSize);
+
+  // LƯU LẠI FONT SIZE ĐỂ DÙNG CHO LOGIC VẼ TUYẾT
+  CONFIG.usedFontSize = fontSize;
+
+  const lineHeight = fontSize * 1.2;
   const startY = height / 2 - ((lines.length - 1) * lineHeight) / 2;
 
+  offCtx.fillStyle = "#FFFFFF";
+  offCtx.textAlign = "center";
+  offCtx.textBaseline = "middle";
+  offCtx.font = `bold ${fontSize}px ${CONFIG.fontFamily}`;
+  
   lines.forEach((line, index) => {
     offCtx.fillText(line, width / 2, startY + index * lineHeight);
   });
 
   const imageData = offCtx.getImageData(0, 0, width, height).data;
-  const gap = 3;
+  
+  // GAP DYNAMIC THEO FONT SIZE
+  // Font to -> Gap to (ít điểm hơn). Font nhỏ -> Gap nhỏ (nhiều điểm hơn để rõ nét)
+  // Ví dụ: Font 120 -> Gap 4. Font 40 -> Gap 2.
+  const gap = Math.max(2, Math.floor(fontSize / 30)); 
 
   for (let y = 0; y < height; y += gap) {
     for (let x = 0; x < width; x += gap) {
