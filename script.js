@@ -228,10 +228,35 @@ function deobfuscate(hexMap) {
 
 // --- GAME LOGIC ---
 
+// --- MOUSE INTERACTION ---
+const mouse = { x: -9999, y: -9999, radius: 100 };
+
+window.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+window.addEventListener('mouseout', () => {
+    mouse.x = -9999;
+    mouse.y = -9999;
+});
+window.addEventListener('touchstart', (e) => {
+    mouse.x = e.touches[0].clientX;
+    mouse.y = e.touches[0].clientY;
+});
+window.addEventListener('touchend', () => {
+    mouse.x = -9999;
+    mouse.y = -9999;
+});
+
 class BaseSnowflake {
   constructor() {
     this.radius = Math.random() * 2 + 1;
     this.opacity = Math.random() * 0.5 + 0.4;
+    
+    // Physics properties
+    this.vx = 0;
+    this.vy = 0;
+    this.friction = 0.95; // Giảm tốc độ dần
 
     this.swayAngle = Math.random() * Math.PI * 2;
     this.swaySpeed = Math.random() * 0.02 + 0.005;
@@ -254,15 +279,45 @@ class Snowflake extends BaseSnowflake {
     this.x = Math.random() * width;
     this.y = Math.random() * height;
     this.speed = Math.random() * 1 + 0.5;
+    this.vx = 0;
+    this.vy = 0;
   }
 
   update() {
+    // Basic movement
     this.y += this.speed;
     this.x += this.updateSway();
+    
+    // Mouse Interaction
+    const dx = this.x - mouse.x;
+    const dy = this.y - mouse.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < mouse.radius) {
+        // Calculate repulsion force
+        const forceDirectionX = dx / distance;
+        const forceDirectionY = dy / distance;
+        const force = (mouse.radius - distance) / mouse.radius;
+        const power = 3; // Strength of repulsion
+        
+        this.vx += forceDirectionX * force * power;
+        this.vy += forceDirectionY * force * power;
+    }
 
+    // Apply physics
+    this.x += this.vx;
+    this.y += this.vy;
+    
+    // Friction
+    this.vx *= this.friction;
+    this.vy *= this.friction;
+
+    // Reset if out of bounds (standard loop)
     if (this.y > height + 5) {
       this.y = -5;
       this.x = Math.random() * width;
+      this.vx = 0;
+      this.vy = 0;
     }
     if (this.x > width + 5) this.x = -5;
     if (this.x < -5) this.x = width + 5;
@@ -284,7 +339,6 @@ class StickySnowflake extends BaseSnowflake {
 
     // Chỉnh radius theo font size để chữ nhỏ thì tuyết nhỏ, nhìn rõ nét hơn
     const baseRadius = CONFIG.usedFontSize ? CONFIG.usedFontSize / 40 : 2; 
-    // Ví dụ: Font 120 -> radius ~3. Font 40 -> radius ~1. 
     this.radius = Math.random() * baseRadius + (baseRadius * 0.5);
 
     const startNoise = (Math.random() - 0.5) * 50;
@@ -293,22 +347,81 @@ class StickySnowflake extends BaseSnowflake {
 
     this.speed = Math.random() * 1.5 + 1;
     this.landed = false;
-
-    this.driftCorrection =
-      ((targetX - this.x) / (targetY - this.y)) * this.speed;
   }
 
   update() {
-    if (this.landed) return;
+    // 1. Mouse Interaction (Check ngay cả khi đã landed)
+    const dx = this.x - mouse.x;
+    const dy = this.y - mouse.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
 
-    this.y += this.speed;
+    if (distance < mouse.radius) {
+        // Nếu chuột chạm vào -> Bị văng ra
+        this.landed = false;
+        
+        const forceDirectionX = dx / distance;
+        const forceDirectionY = dy / distance;
+        const force = (mouse.radius - distance) / mouse.radius;
+        const power = 5; // Lực văng mạnh hơn background một chút
+        
+        this.vx += forceDirectionX * force * power;
+        this.vy += forceDirectionY * force * power;
+    }
+
+    if (this.landed) {
+        // Nếu đã hạ cánh và không bị chuột chạm, đứng yên tuyệt đối hoặc sway nhẹ tuỳ ý.
+        // Ở đây ta giữ nguyên vị trí đã landed.
+        return;
+    }
+
+    // 2. Movement Logic
+    // Apply sway
     this.x += this.updateSway();
-    this.x += this.driftCorrection;
+    // Apply physics velocity (do chuột tác động)
+    this.x += this.vx;
+    this.y += this.vy;
+    
+    // Apply friction to physics velocity
+    this.vx *= this.friction;
+    this.vy *= this.friction;
 
-    if (this.y >= this.targetY) {
-      this.y = this.targetY;
-      this.x = this.targetX;
-      this.landed = true;
+    // 3. Falling / Return Logic
+    // Tính vector hướng về đích
+    const targetDx = this.targetX - this.x;
+    const targetDy = this.targetY - this.y;
+    
+    // Nếu chưa chạm đáy (đang rơi tự do ban đầu) hoặc đang bị văng
+    // Ta thêm logic: Luôn bị hút về đích
+    
+    // Tốc độ hồi phục về vị trí cũ
+    const returnSpeed = 0.05; // Hệ số lerp
+    
+    // Nếu đang rơi xuống lần đầu (chưa bao giờ landed và y còn xa)
+    if (this.y < this.targetY && Math.abs(this.vy) < 0.1 && Math.abs(this.vx) < 0.1 && !this.landed) {
+         this.y += this.speed;
+         
+         // Drift correction cũ để hướng về đích khi đang rơi
+         const drift = ((this.targetX - this.x) / (this.targetY - this.y)) * this.speed;
+         // Giới hạn drift kẻo bị văng quá xa nếu chia cho số nhỏ
+         if (!isNaN(drift) && Math.abs(drift) < 5) {
+             this.x += drift;
+         }
+    } else {
+        // Đã qua y đích hoặc đang bay lung tung do chuột
+        // Bay từ từ về đích
+        this.x += targetDx * returnSpeed;
+        this.y += targetDy * returnSpeed;
+    }
+
+    // 4. Check Landing
+    // Nếu gần đích và vận tốc thấp -> Snap
+    const distToTarget = Math.sqrt(targetDx * targetDx + targetDy * targetDy);
+    if (distToTarget < 2 && Math.abs(this.vx) < 0.5 && Math.abs(this.vy) < 0.5) {
+        this.x = this.targetX;
+        this.y = this.targetY;
+        this.landed = true;
+        this.vx = 0;
+        this.vy = 0;
     }
   }
 
