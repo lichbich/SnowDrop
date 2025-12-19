@@ -28,6 +28,14 @@
             <p style="margin-bottom: 5px; margin-top: 15px;">Thời gian tuyết rơi (phút):</p>
             <input type="number" id="timeInput" placeholder="Ví dụ: 15" min="5">
             
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; width: 80%; margin-left: 10%;">
+                <span style="color: rgba(255, 255, 255, 0.8); font-size: 16px;">Hiệu ứng lấp lánh</span>
+                <label class="switch">
+                    <input type="checkbox" id="twinkleToggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            
             <div id="errorMsg" class="error-message">Thời gian từ 1 phút trở lên!</div>
             
             <div class="button-group">

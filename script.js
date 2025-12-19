@@ -8,6 +8,7 @@ const CONFIG = {
   timeToFillMinutes: 15, // Mặc định, sẽ bị ghi đè bởi input
   fontSize: 120,
   fontFamily: "Arial Black, Verdana, sans-serif",
+  twinkle: false, // Hiệu ứng lấp lánh
 };
 
 const canvas = document.getElementById("snowCanvas");
@@ -22,6 +23,7 @@ const errorMsg = document.getElementById('errorMsg');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 const iconMaximize = document.getElementById('icon-maximize');
 const iconMinimize = document.getElementById('icon-minimize');
+const twinkleToggle = document.getElementById('twinkleToggle'); // Toggle mới
 
 // --- FULLSCREEN TOGGLE ---
 fullscreenBtn.addEventListener('click', toggleFullScreen);
@@ -131,6 +133,7 @@ function startGame() {
 
     CONFIG.text = textInput.value;
     CONFIG.timeToFillMinutes = parseFloat(timeInput.value);
+    CONFIG.twinkle = twinkleToggle.checked; // Lấy giá trị toggle
     
     configOverlay.style.display = 'none';
     initGame();
@@ -251,7 +254,8 @@ window.addEventListener('touchend', () => {
 class BaseSnowflake {
   constructor() {
     this.radius = Math.random() * 2 + 1;
-    this.opacity = Math.random() * 0.5 + 0.4;
+    this.baseOpacity = Math.random() * 0.5 + 0.4;
+    this.opacity = this.baseOpacity;
     
     // Physics properties
     this.vx = 0;
@@ -261,11 +265,31 @@ class BaseSnowflake {
     this.swayAngle = Math.random() * Math.PI * 2;
     this.swaySpeed = Math.random() * 0.02 + 0.005;
     this.swayRange = Math.random() * 1.0 + 0.5;
+
+    // Twinkle properties
+    // Chỉ 20% hạt có khả năng lấp lánh nếu mode bật
+    this.canTwinkle = Math.random() < 0.5; 
+    this.twinkleSpeed = Math.random() * 0.1 + 0.05;
+    this.twinklePhase = Math.random() * Math.PI * 4;
   }
 
   updateSway() {
     this.swayAngle += this.swaySpeed;
     return Math.sin(this.swayAngle) * this.swayRange;
+  }
+
+  updateTwinkle() {
+    if (CONFIG.twinkle && this.canTwinkle) {
+        this.twinklePhase += this.twinkleSpeed;
+        // Opacity dao động từ baseOpacity * 0.3 đến baseOpacity * 1.5 (có thể sáng hơn mức bình thường 1 chút)
+        // Dùng sin để tạo nhịp điệu
+        const val = Math.sin(this.twinklePhase); // -1 -> 1
+        // Map val (-1, 1) -> (0.3, 1.3) factor
+        const factor = 0.8 + val * 0.5; 
+        this.opacity = Math.min(1, Math.max(0.1, this.baseOpacity * factor));
+    } else {
+        this.opacity = this.baseOpacity;
+    }
   }
 }
 
@@ -312,6 +336,9 @@ class Snowflake extends BaseSnowflake {
     this.vx *= this.friction;
     this.vy *= this.friction;
 
+    // Twinkle
+    this.updateTwinkle();
+
     // Reset if out of bounds (standard loop)
     if (this.y > height + 5) {
       this.y = -5;
@@ -326,8 +353,18 @@ class Snowflake extends BaseSnowflake {
   draw() {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    
+    // Flare effect
+    if (CONFIG.twinkle && this.canTwinkle && this.opacity > 0.6) {
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "white";
+    } else {
+        ctx.shadowBlur = 0;
+    }
+
     ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
     ctx.fill();
+    ctx.shadowBlur = 0; // Reset
   }
 }
 
@@ -369,8 +406,8 @@ class StickySnowflake extends BaseSnowflake {
     }
 
     if (this.landed) {
-        // Nếu đã hạ cánh và không bị chuột chạm, đứng yên tuyệt đối hoặc sway nhẹ tuỳ ý.
-        // Ở đây ta giữ nguyên vị trí đã landed.
+        // Update twinkle even if landed
+        this.updateTwinkle();
         return;
     }
 
@@ -423,15 +460,47 @@ class StickySnowflake extends BaseSnowflake {
         this.vx = 0;
         this.vy = 0;
     }
+    
+    this.updateTwinkle();
   }
 
   draw() {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = this.landed
-      ? "rgba(255, 255, 255, 0.9)"
-      : `rgba(255, 255, 255, ${this.opacity})`;
+    // Logic landed cũ là 0.9, giờ ta thay bằng biến opacity đã có hiệu ứng twinkle
+    // Nếu landed mà ko twinkle thì nó sẽ là baseOpacity (random 0.4-0.9)
+    // Nhưng thiết kế cũ landed cứng 0.9.
+    // Vậy ta chỉnh baseOpacity của StickySnowflake cao hơn chút?
+    // Hoặc đơn giản: Nếu landed thì base = 0.9.
+    
+    let drawOpacity = this.opacity;
+    let isFlare = false;
+    
+    if (this.landed) {
+        // Nếu landed, ta muốn nó sáng (0.9), nhưng vẫn twinkle nếu cần
+        if (CONFIG.twinkle && this.canTwinkle) {
+            // Recalculate based on 0.9 base
+             const val = Math.sin(this.twinklePhase); 
+             const factor = 1.0 + val * 0.3; // 0.7 -> 1.3
+             drawOpacity = Math.min(1, 0.9 * factor);
+             if (drawOpacity > 0.95) isFlare = true;
+        } else {
+            drawOpacity = 0.9;
+        }
+    } else {
+        if (CONFIG.twinkle && this.canTwinkle && this.opacity > 0.6) isFlare = true;
+    }
+    
+    if (isFlare) {
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "white";
+    } else {
+        ctx.shadowBlur = 0;
+    }
+    
+    ctx.fillStyle = `rgba(255, 255, 255, ${drawOpacity})`;
     ctx.fill();
+    ctx.shadowBlur = 0;
   }
 }
 
