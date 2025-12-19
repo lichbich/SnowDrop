@@ -8,7 +8,7 @@ const CONFIG = {
   timeToFillMinutes: 15, // Mặc định, sẽ bị ghi đè bởi input
   fontSize: 120,
   fontFamily: "Arial Black, Verdana, sans-serif",
-  twinkle: false, // Hiệu ứng lấp lánh
+  twinkle: true, // Hiệu ứng lấp lánh
 };
 
 const canvas = document.getElementById("snowCanvas");
@@ -399,7 +399,7 @@ class StickySnowflake extends BaseSnowflake {
         const forceDirectionX = dx / distance;
         const forceDirectionY = dy / distance;
         const force = (mouse.radius - distance) / mouse.radius;
-        const power = 5; // Lực văng mạnh hơn background một chút
+        const power = 3; // Lực văng mạnh hơn background một chút
         
         this.vx += forceDirectionX * force * power;
         this.vy += forceDirectionY * force * power;
