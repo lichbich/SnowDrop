@@ -24,9 +24,11 @@ const fullscreenBtn = document.getElementById('fullscreenBtn');
 const iconMaximize = document.getElementById('icon-maximize');
 const iconMinimize = document.getElementById('icon-minimize');
 const twinkleToggle = document.getElementById('twinkleToggle'); // Toggle mới
+const mainShareBtn = document.getElementById('mainShareBtn'); // Nút share trong game
 
 // --- FULLSCREEN TOGGLE ---
 fullscreenBtn.addEventListener('click', toggleFullScreen);
+mainShareBtn.addEventListener('click', shareActiveGame);
 
 let hideTimeout;
 
@@ -47,37 +49,30 @@ function updateFullscreenButton() {
         iconMaximize.style.display = 'none';
         iconMinimize.style.display = 'block';
         fullscreenBtn.setAttribute('title', 'Thoát toàn màn hình');
-        
-        // Start auto-hide logic
-        resetHideTimer();
-        document.addEventListener('mousemove', resetHideTimer);
-        document.addEventListener('mousedown', resetHideTimer);
-        document.addEventListener('touchstart', resetHideTimer);
     } else {
         iconMaximize.style.display = 'block';
         iconMinimize.style.display = 'none';
         fullscreenBtn.setAttribute('title', 'Toàn màn hình');
-        
-        // Stop auto-hide logic
-        clearTimeout(hideTimeout);
-        fullscreenBtn.classList.remove('hidden');
-        document.removeEventListener('mousemove', resetHideTimer);
-        document.removeEventListener('mousedown', resetHideTimer);
-        document.removeEventListener('touchstart', resetHideTimer);
     }
 }
 
 function resetHideTimer() {
     fullscreenBtn.classList.remove('hidden');
+    mainShareBtn.classList.remove('hidden');
     clearTimeout(hideTimeout);
     hideTimeout = setTimeout(() => {
-        if (document.fullscreenElement) {
-            fullscreenBtn.classList.add('hidden');
-        }
+        fullscreenBtn.classList.add('hidden');
+        mainShareBtn.classList.add('hidden');
     }, 3000);
 }
 
 document.addEventListener('fullscreenchange', updateFullscreenButton);
+
+// Start auto-hide logic globally
+resetHideTimer();
+document.addEventListener('mousemove', resetHideTimer);
+document.addEventListener('mousedown', resetHideTimer);
+document.addEventListener('touchstart', resetHideTimer);
 
 let width, height;
 let textPoints = []; 
@@ -137,6 +132,21 @@ function startGame() {
     
     configOverlay.style.display = 'none';
     initGame();
+}
+
+function shareActiveGame() {
+    // Share khi game đang chạy (lấy config hiện tại)
+    const secretCode = obfuscate(CONFIG.text);
+    const tm = CONFIG.timeToFillMinutes;
+    
+    const shareUrl = `${window.location.origin}${window.location.pathname}?code=${secretCode}&time=${tm}`;
+    
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        alert("Đã copy link! Gửi cho người ấy ngay đi nào ❤️");
+    }).catch(err => {
+        console.error('Không copy được: ', err);
+        alert("Có lỗi khi copy link.");
+    });
 }
 
 function shareLink() {

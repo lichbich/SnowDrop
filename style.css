@@ -164,15 +164,14 @@ canvas {
   animation: shake 0.4s ease-in-out;
 }
 
-/* Fullscreen Button Styles */
-#fullscreenBtn {
+/* Floating Button Styles (Fullscreen & Share) */
+#fullscreenBtn, #mainShareBtn {
     position: absolute;
-    top: 20px;
     right: 20px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
-    width: 44px; /* Slightly larger for easier tap */
+    width: 44px; 
     height: 44px;
     display: flex;
     justify-content: center;
@@ -186,23 +185,31 @@ canvas {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-#fullscreenBtn:hover {
+#fullscreenBtn {
+    top: 20px;
+}
+
+#mainShareBtn {
+    top: 74px; /* 20px + 44px + 10px gap */
+}
+
+#fullscreenBtn:hover, #mainShareBtn:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
     color: #fff;
 }
 
-#fullscreenBtn:active {
+#fullscreenBtn:active, #mainShareBtn:active {
     transform: scale(0.95);
 }
 
-#fullscreenBtn svg {
+#fullscreenBtn svg, #mainShareBtn svg {
     width: 20px;
     height: 20px;
 }
 
-#fullscreenBtn.hidden {
+#fullscreenBtn.hidden, #mainShareBtn.hidden {
     opacity: 0;
     pointer-events: none;
 }
